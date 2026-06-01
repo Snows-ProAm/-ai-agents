@@ -3,6 +3,9 @@ name = "ai-agents"
 version = "0.1.0"
 description = "Practice workspace for Python AI agents"
 requires-python = ">=3.11"
+dependencies = [
+    "flask>=3.0.0",
+]
 
 [tool.ruff]
 line-length = 100
