@@ -8,14 +8,9 @@ import sys
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
 
-from dotenv import load_dotenv
-
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from agents.telegram_youtube_email_bot import handle_update
-
-
-load_dotenv()
 
 
 class handler(BaseHTTPRequestHandler):

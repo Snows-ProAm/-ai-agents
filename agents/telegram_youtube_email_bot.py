@@ -12,8 +12,6 @@ from urllib.error import HTTPError
 from pathlib import Path
 from typing import Any
 
-from dotenv import load_dotenv
-
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from agents.youtube_email_service import handle_video_request
@@ -23,7 +21,7 @@ TELEGRAM_API_URL = "https://api.telegram.org"
 
 
 def run_bot() -> None:
-    load_dotenv()
+    _load_dotenv_if_available()
     token = _required_env("TELEGRAM_BOT_TOKEN")
     allowed_chat_id = os.getenv("TELEGRAM_ALLOWED_CHAT_ID", "").strip()
     offset = 0
@@ -101,6 +99,15 @@ def _required_env(name: str) -> str:
     if not value:
         raise RuntimeError(f"Missing required environment variable: {name}")
     return value
+
+
+def _load_dotenv_if_available() -> None:
+    try:
+        from dotenv import load_dotenv
+    except ModuleNotFoundError:
+        return
+
+    load_dotenv()
 
 
 if __name__ == "__main__":
