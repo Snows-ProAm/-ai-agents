@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from typing import Any
 
 from agents.video_email_request import extract_email_addresses
-from shared.supabase_client import get_supabase_service_client
 
 
 CONTACT_COMMAND_PATTERN = re.compile(r"\b(?:remember|store|save|add)\b", flags=re.IGNORECASE)
@@ -64,6 +63,8 @@ def parse_contact_memory_request(message: str) -> ContactMemoryRequest | None:
 
 
 def upsert_contact(request: ContactMemoryRequest) -> dict[str, Any]:
+    from shared.supabase_client import get_supabase_service_client
+
     supabase = get_supabase_service_client()
     workspace_id = _get_personal_workspace_id(supabase)
     existing = _find_existing_contact(supabase, workspace_id, request)
