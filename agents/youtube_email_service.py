@@ -4,18 +4,11 @@ from __future__ import annotations
 
 import os
 import re
-from dataclasses import dataclass
 
 from agents.video_finder import build_video_email, extract_video_query, find_best_youtube_video
+from agents.gemini_request_parser import parse_video_email_request_with_gemini
+from agents.video_email_request import EMAIL_PATTERN, VideoEmailRequest, extract_email_addresses
 from shared.email_client import send_gmail_message
-
-EMAIL_PATTERN = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", flags=re.IGNORECASE)
-
-
-@dataclass(frozen=True)
-class VideoEmailRequest:
-    query: str
-    recipients: list[str]
 
 
 def handle_video_request(message: str) -> str:
@@ -23,7 +16,7 @@ def handle_video_request(message: str) -> str:
     gmail_address = _required_env("GMAIL_ADDRESS")
     gmail_app_password = _required_env("GMAIL_APP_PASSWORD")
     default_to_email = os.getenv("EMAIL_TO", gmail_address).strip()
-    request = parse_video_email_request(message, default_to_email)
+    request = _parse_request(message, default_to_email)
 
     video = find_best_youtube_video(request.query, youtube_api_key)
     subject, body = build_video_email(request.query, video)
@@ -38,25 +31,31 @@ def handle_video_request(message: str) -> str:
     return f"Found and emailed: {video.title} to {', '.join(request.recipients)}"
 
 
+def _parse_request(message: str, default_to_email: str) -> VideoEmailRequest:
+    gemini_api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+    if gemini_api_key:
+        try:
+            return parse_video_email_request_with_gemini(
+                message=message,
+                default_to_email=default_to_email,
+                api_key=gemini_api_key,
+                model=gemini_model,
+            )
+        except Exception:
+            pass
+
+    return parse_video_email_request(message, default_to_email)
+
+
 def parse_video_email_request(message: str, default_to_email: str) -> VideoEmailRequest:
-    recipients = _extract_email_addresses(message) or _extract_email_addresses(default_to_email)
+    recipients = extract_email_addresses(message) or extract_email_addresses(default_to_email)
     if not recipients:
         raise ValueError("No recipient email address was provided.")
 
-    query_message = _remove_recipient_instruction(message) if _extract_email_addresses(message) else message
+    query_message = _remove_recipient_instruction(message) if extract_email_addresses(message) else message
     query = extract_video_query(query_message)
     return VideoEmailRequest(query=query, recipients=recipients)
-
-
-def _extract_email_addresses(value: str) -> list[str]:
-    addresses: list[str] = []
-    seen: set[str] = set()
-    for match in EMAIL_PATTERN.finditer(value):
-        address = match.group(0).strip().lower()
-        if address not in seen:
-            addresses.append(address)
-            seen.add(address)
-    return addresses
 
 
 def _remove_recipient_instruction(message: str) -> str:

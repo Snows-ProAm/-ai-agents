@@ -137,9 +137,13 @@ GMAIL_APP_PASSWORD=
 EMAIL_TO=
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_ALLOWED_CHAT_ID=
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
 ```
 
 `EMAIL_TO` is the fallback recipient if the Telegram message does not include an email address. You can set it to one address or multiple comma-separated addresses.
+
+`GEMINI_API_KEY` is optional. When it is set, the bot uses Gemini Flash to understand more flexible Telegram wording before searching YouTube. If Gemini is not configured or fails, the bot falls back to the normal parser.
 
 After deployment, register the Telegram webhook:
 
