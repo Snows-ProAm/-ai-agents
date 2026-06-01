@@ -33,7 +33,7 @@ def handle_video_request(message: str) -> str:
 
 def _parse_request(message: str, default_to_email: str) -> VideoEmailRequest:
     gemini_api_key = os.getenv("GEMINI_API_KEY", "").strip()
-    gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.5-flash").strip()
+    gemini_model = os.getenv("GEMINI_MODEL", "").strip() or "gemini-2.5-flash"
     if gemini_api_key:
         try:
             return parse_video_email_request_with_gemini(

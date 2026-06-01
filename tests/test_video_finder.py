@@ -7,6 +7,7 @@ from agents.video_finder import (
     video_result_from_youtube_item,
 )
 from agents.youtube_email_service import parse_video_email_request
+from agents import youtube_email_service
 
 
 @pytest.mark.parametrize(
@@ -82,3 +83,30 @@ def test_parse_video_email_request_falls_back_to_default_recipients() -> None:
 
     assert request.query == "learning python"
     assert request.recipients == ["fallback@example.com", "other@example.com"]
+
+
+def test_parse_request_uses_default_gemini_model_when_env_is_blank(monkeypatch) -> None:
+    seen = {}
+
+    def fake_gemini_parse(*, message, default_to_email, api_key, model):
+        seen["model"] = model
+        return youtube_email_service.VideoEmailRequest(
+            query="python tutorial",
+            recipients=["person@example.com"],
+        )
+
+    monkeypatch.setenv("GEMINI_API_KEY", "key")
+    monkeypatch.setenv("GEMINI_MODEL", "")
+    monkeypatch.setattr(
+        youtube_email_service,
+        "parse_video_email_request_with_gemini",
+        fake_gemini_parse,
+    )
+
+    request = youtube_email_service._parse_request(
+        "send person@example.com a python tutorial",
+        "fallback@example.com",
+    )
+
+    assert seen["model"] == "gemini-2.5-flash"
+    assert request.query == "python tutorial"
