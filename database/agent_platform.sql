@@ -661,8 +661,11 @@ from workspace_row
 cross join (
   values
     ('router', 'Router Agent', 'Classifies requests and assigns work.', 'Route each request to the best agent, workflow, or tool.'),
+    ('personal_assistant', 'Personal Assistant', 'General-purpose assistant that coordinates everyday requests.', 'Help the user complete practical tasks by using memory, contacts, research, scheduling, and communication tools.'),
+    ('research_agent', 'Research Agent', 'Searches, reads, compares, and summarizes information.', 'Research topics carefully, cite useful sources in artifacts, and hand off communication when needed.'),
     ('youtube_researcher', 'YouTube Research Agent', 'Finds and evaluates YouTube videos.', 'Find high-quality videos and explain why they match the request.'),
     ('email_assistant', 'Email Assistant', 'Prepares and sends emails.', 'Write clear emails and send them only through approved tools.'),
+    ('scheduler_agent', 'Scheduler Agent', 'Handles reminders, calendar tasks, and timed workflows.', 'Create reminders, schedule tasks, and coordinate calendar-related actions.'),
     ('memory_agent', 'Memory Agent', 'Stores and retrieves durable memory.', 'Save useful facts, preferences, and contact knowledge.'),
     ('workflow_manager', 'Workflow Manager', 'Coordinates multi-step jobs.', 'Break complex requests into ordered tasks and monitor completion.')
 ) as agent(slug, name, description, system_prompt)
@@ -683,11 +686,118 @@ from workspace_row
 cross join (
   values
     ('youtube_search', 'YouTube Search', 'Search YouTube for videos.', 'api', false),
+    ('youtube_transcript', 'YouTube Transcript', 'Fetch or store video transcripts when available.', 'api', false),
+    ('youtube_rank_videos', 'YouTube Rank Videos', 'Compare candidate videos and choose the best match.', 'internal', false),
     ('gmail_send', 'Gmail Send', 'Send email through Gmail SMTP.', 'api', true),
+    ('gmail_draft', 'Gmail Draft', 'Prepare an email draft for review before sending.', 'api', false),
+    ('gmail_read', 'Gmail Read', 'Read approved mailbox threads for context.', 'api', true),
+    ('telegram_send', 'Telegram Send', 'Send Telegram messages back to the user or allowed chats.', 'api', false),
     ('contacts_lookup', 'Contacts Lookup', 'Resolve names and aliases to contact details.', 'database', false),
+    ('contacts_write', 'Contacts Write', 'Create or update contact records and aliases.', 'database', true),
     ('memory_search', 'Memory Search', 'Retrieve saved agent memory.', 'database', false),
     ('memory_write', 'Memory Write', 'Save durable agent memory.', 'database', false),
+    ('memory_update', 'Memory Update', 'Revise or deprecate saved memories.', 'database', true),
     ('web_search', 'Web Search', 'Search the web for current information.', 'api', false),
+    ('web_fetch', 'Web Fetch', 'Fetch a specific URL for reading or summarization.', 'api', false),
+    ('url_summarize', 'URL Summarize', 'Summarize a webpage, article, or document URL.', 'internal', false),
+    ('calendar_create', 'Calendar Create', 'Create calendar events after approval.', 'api', true),
+    ('calendar_list', 'Calendar List', 'Read calendar availability or upcoming events.', 'api', true),
+    ('reminder_create', 'Reminder Create', 'Create reminders or scheduled follow-up tasks.', 'database', false),
+    ('task_create', 'Task Create', 'Create a tracked agent task or subtask.', 'database', false),
+    ('artifact_write', 'Artifact Write', 'Save summaries, reports, emails, links, or files as artifacts.', 'database', false),
+    ('workflow_start', 'Workflow Start', 'Start a reusable multi-step workflow.', 'internal', false),
+    ('cost_report', 'Cost Report', 'Report token usage, spend, latency, and run history.', 'database', false),
     ('approval_request', 'Approval Request', 'Ask a human to approve sensitive actions.', 'human', false)
 ) as tool(slug, name, description, tool_type, requires_approval)
 on conflict (workspace_id, slug) do nothing;
+
+with workspace_row as (
+  select id from public.workspaces where slug = 'personal'
+),
+permissions as (
+  select
+    workspace_row.id as workspace_id,
+    permission.agent_slug,
+    permission.tool_slug,
+    permission.permission_level
+  from workspace_row
+  cross join (
+    values
+      ('router', 'contacts_lookup', 'read'),
+      ('router', 'memory_search', 'read'),
+      ('router', 'task_create', 'execute'),
+      ('router', 'workflow_start', 'execute'),
+      ('router', 'approval_request', 'execute'),
+      ('router', 'cost_report', 'read'),
+
+      ('personal_assistant', 'contacts_lookup', 'read'),
+      ('personal_assistant', 'contacts_write', 'execute'),
+      ('personal_assistant', 'memory_search', 'read'),
+      ('personal_assistant', 'memory_write', 'execute'),
+      ('personal_assistant', 'web_search', 'execute'),
+      ('personal_assistant', 'web_fetch', 'execute'),
+      ('personal_assistant', 'url_summarize', 'execute'),
+      ('personal_assistant', 'gmail_draft', 'execute'),
+      ('personal_assistant', 'telegram_send', 'execute'),
+      ('personal_assistant', 'reminder_create', 'execute'),
+      ('personal_assistant', 'task_create', 'execute'),
+      ('personal_assistant', 'artifact_write', 'execute'),
+      ('personal_assistant', 'approval_request', 'execute'),
+
+      ('research_agent', 'web_search', 'execute'),
+      ('research_agent', 'web_fetch', 'execute'),
+      ('research_agent', 'url_summarize', 'execute'),
+      ('research_agent', 'youtube_search', 'execute'),
+      ('research_agent', 'youtube_transcript', 'execute'),
+      ('research_agent', 'youtube_rank_videos', 'execute'),
+      ('research_agent', 'memory_search', 'read'),
+      ('research_agent', 'artifact_write', 'execute'),
+      ('research_agent', 'cost_report', 'read'),
+
+      ('youtube_researcher', 'youtube_search', 'execute'),
+      ('youtube_researcher', 'youtube_transcript', 'execute'),
+      ('youtube_researcher', 'youtube_rank_videos', 'execute'),
+      ('youtube_researcher', 'memory_search', 'read'),
+      ('youtube_researcher', 'artifact_write', 'execute'),
+
+      ('email_assistant', 'contacts_lookup', 'read'),
+      ('email_assistant', 'gmail_draft', 'execute'),
+      ('email_assistant', 'gmail_send', 'execute'),
+      ('email_assistant', 'gmail_read', 'read'),
+      ('email_assistant', 'approval_request', 'execute'),
+      ('email_assistant', 'artifact_write', 'execute'),
+
+      ('scheduler_agent', 'calendar_list', 'read'),
+      ('scheduler_agent', 'calendar_create', 'execute'),
+      ('scheduler_agent', 'reminder_create', 'execute'),
+      ('scheduler_agent', 'task_create', 'execute'),
+      ('scheduler_agent', 'approval_request', 'execute'),
+
+      ('memory_agent', 'contacts_lookup', 'read'),
+      ('memory_agent', 'contacts_write', 'execute'),
+      ('memory_agent', 'memory_search', 'read'),
+      ('memory_agent', 'memory_write', 'execute'),
+      ('memory_agent', 'memory_update', 'execute'),
+      ('memory_agent', 'artifact_write', 'execute'),
+
+      ('workflow_manager', 'task_create', 'execute'),
+      ('workflow_manager', 'workflow_start', 'execute'),
+      ('workflow_manager', 'approval_request', 'execute'),
+      ('workflow_manager', 'cost_report', 'read'),
+      ('workflow_manager', 'artifact_write', 'execute')
+  ) as permission(agent_slug, tool_slug, permission_level)
+)
+insert into public.agent_tool_permissions (agent_id, tool_id, permission_level)
+select
+  agent_profiles.id,
+  agent_tools.id,
+  permissions.permission_level
+from permissions
+join public.agent_profiles
+  on agent_profiles.workspace_id = permissions.workspace_id
+ and agent_profiles.slug = permissions.agent_slug
+join public.agent_tools
+  on agent_tools.workspace_id = permissions.workspace_id
+ and agent_tools.slug = permissions.tool_slug
+on conflict (agent_id, tool_id) do update
+set permission_level = excluded.permission_level;
