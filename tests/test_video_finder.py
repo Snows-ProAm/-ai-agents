@@ -6,6 +6,7 @@ from agents.video_finder import (
     extract_video_query,
     video_result_from_youtube_item,
 )
+from agents.youtube_email_service import parse_video_email_request
 
 
 @pytest.mark.parametrize(
@@ -61,3 +62,23 @@ def test_build_video_email() -> None:
     assert subject == "Best YouTube video for: python agents"
     assert "Python Agents" in body
     assert "https://www.youtube.com/watch?v=abc123" in body
+
+
+def test_parse_video_email_request_uses_recipients_from_message() -> None:
+    request = parse_video_email_request(
+        "find me best video on learning python on youtube send to sam@example.com and jo@example.com",
+        "fallback@example.com",
+    )
+
+    assert request.query == "learning python"
+    assert request.recipients == ["sam@example.com", "jo@example.com"]
+
+
+def test_parse_video_email_request_falls_back_to_default_recipients() -> None:
+    request = parse_video_email_request(
+        "find me best video on learning python on youtube",
+        "fallback@example.com, other@example.com",
+    )
+
+    assert request.query == "learning python"
+    assert request.recipients == ["fallback@example.com", "other@example.com"]

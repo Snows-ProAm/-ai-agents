@@ -53,7 +53,7 @@ def handle_update(token: str, update: dict[str, Any], allowed_chat_id: str = "")
         telegram_send_message(
             token,
             chat_id,
-            "Send a message like: find me best video on learning python on youtube",
+            "Send a message like: find me best video on learning python on youtube send to person@example.com",
         )
         return
 

@@ -48,7 +48,10 @@ def test_handle_update_replies_to_help(monkeypatch) -> None:
     )
 
     assert sent_messages == [
-        ("123", "Send a message like: find me best video on learning python on youtube")
+        (
+            "123",
+            "Send a message like: find me best video on learning python on youtube send to person@example.com",
+        )
     ]
 
 

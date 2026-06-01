@@ -111,7 +111,13 @@ python agents/telegram_youtube_email_bot.py
 Then message your bot:
 
 ```text
-find me best video on learning python on youtube
+find me best video on learning python on youtube send to person@example.com
+```
+
+You can send to multiple addresses in the same Telegram message:
+
+```text
+find me best video on AI agents on youtube send to person@example.com and teammate@example.com
 ```
 
 ## Vercel Telegram Webhook
@@ -132,6 +138,8 @@ EMAIL_TO=
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_ALLOWED_CHAT_ID=
 ```
+
+`EMAIL_TO` is the fallback recipient if the Telegram message does not include an email address. You can set it to one address or multiple comma-separated addresses.
 
 After deployment, register the Telegram webhook:
 
