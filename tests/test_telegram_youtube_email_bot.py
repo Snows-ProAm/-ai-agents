@@ -76,6 +76,34 @@ def test_handle_update_runs_video_request(monkeypatch) -> None:
     assert sent_messages == [("123", "handled: find me best video on python")]
 
 
+def test_handle_update_runs_gemini_chat_for_general_message(monkeypatch) -> None:
+    sent_messages = []
+    video_requests = []
+    monkeypatch.setattr(
+        telegram_youtube_email_bot,
+        "telegram_send_message",
+        lambda token, chat_id, text: sent_messages.append((chat_id, text)),
+    )
+    monkeypatch.setattr(
+        telegram_youtube_email_bot,
+        "handle_video_request",
+        lambda text: video_requests.append(text),
+    )
+    monkeypatch.setattr(
+        telegram_youtube_email_bot,
+        "handle_gemini_chat",
+        lambda text: f"chat: {text}",
+    )
+
+    telegram_youtube_email_bot.handle_update(
+        "token",
+        {"message": {"chat": {"id": 123}, "text": "tell me about Alex Hormozi"}},
+    )
+
+    assert sent_messages == [("123", "chat: tell me about Alex Hormozi")]
+    assert video_requests == []
+
+
 def test_handle_update_stores_contact_instead_of_running_video_request(monkeypatch) -> None:
     sent_messages = []
     video_requests = []

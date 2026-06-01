@@ -15,6 +15,7 @@ from typing import Any
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from agents.contact_memory_service import maybe_handle_contact_memory
+from agents.gemini_chat_service import handle_gemini_chat
 from agents.youtube_email_service import handle_video_request
 
 
@@ -59,7 +60,9 @@ def handle_update(token: str, update: dict[str, Any], allowed_chat_id: str = "")
         return
 
     try:
-        reply = maybe_handle_contact_memory(text) or handle_video_request(text)
+        reply = maybe_handle_contact_memory(text)
+        if not reply:
+            reply = handle_video_request(text) if _looks_like_video_request(text) else handle_gemini_chat(text)
     except Exception as exc:
         reply = f"I could not complete that request: {exc}"
 
@@ -74,6 +77,20 @@ def telegram_get_updates(token: str, offset: int) -> list[dict[str, Any]]:
 
 def telegram_send_message(token: str, chat_id: str, text: str) -> None:
     _telegram_request(token, "sendMessage", {"chat_id": chat_id, "text": text})
+
+
+def _looks_like_video_request(text: str) -> bool:
+    lowered = text.lower()
+    video_markers = [
+        "youtube",
+        "video",
+        "videos",
+        "best video",
+        "find me best",
+        "find a good video",
+        "grab a useful video",
+    ]
+    return any(marker in lowered for marker in video_markers)
 
 
 def _telegram_request(token: str, method: str, params: dict[str, Any]) -> dict[str, Any]:
