@@ -14,6 +14,7 @@ from typing import Any
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
+from agents.contact_memory_service import maybe_handle_contact_memory
 from agents.youtube_email_service import handle_video_request
 
 
@@ -58,7 +59,7 @@ def handle_update(token: str, update: dict[str, Any], allowed_chat_id: str = "")
         return
 
     try:
-        reply = handle_video_request(text)
+        reply = maybe_handle_contact_memory(text) or handle_video_request(text)
     except Exception as exc:
         reply = f"I could not complete that request: {exc}"
 
