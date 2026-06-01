@@ -1,0 +1,9 @@
+# Core agent/API libraries
+openai>=1.0.0
+python-dotenv>=1.0.0
+supabase>=2.0.0
+flask>=3.0.0
+
+# Dev tools
+pytest>=8.0.0
+ruff>=0.6.0
